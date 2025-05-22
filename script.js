@@ -42,10 +42,43 @@ server.post('/logs/registros', (req, res) => {
     });
 })
 
+server.post("/logs", (request, response) => {
+  const body = request.body;
 
+  if (!body.name) {
+    return response.status(400).send("Nome é obrigatorio");
+  }
+
+  const mensagem = {
+    id: randomUUID(),
+    mensagem: "",
+  };
+
+  fs.readFile("logs.txt", "utf-8", (err, data) => {
+    if (err) {
+      console.error("Erro ao ler arquivo:", err);
+      return response.status(500).json("Internal Server Error");
+    }
+
+    const logs = data ? JSON.parse(data) : [];
+    mensagem.mensagem = "Log criado com sucesso!"
+    logs.push(mensagem);
+
+    fs.writeFile("logs.txt", JSON.stringify(logs, null, 2), (err) => {
+      if (err) {
+        console.error("Erro ao escrever arquivo:", err);
+        return response.status(500).send("Internal Server Error");
+      }
+
+      return response
+        .status(200)
+        .json({ id: mensagem.id, mensagem: mensagem.mensagem });
+    });
+  });
+});
     
 
-server.get('/logs', (req, res) => {
+server.get('/logs/:id', (req, res) => {
     const { id } = req.params;
 
 fs.readFile('logs.txt', 'utf-8', (err, data) => {
@@ -61,7 +94,7 @@ fs.readFile('logs.txt', 'utf-8', (err, data) => {
             return res.status(404).json('Log not found');
         }
 
-        return res.json(log);
+        return res.status(200).json(log);
     });
 })
 
