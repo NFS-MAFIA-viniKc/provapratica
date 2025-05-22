@@ -1,36 +1,38 @@
 import fs from 'fs';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import bodyParser from 'body-parser';
 
 const server = express();
+server.use(express.json());
+
 const PORT = 8000;
 
-server.use(express.json());
+// Rota GET raiz
 server.get('/', (req, res) => {
     console.log('rota get');
     res.send('pintu');
-})
+});
 
+// Rota POST /logs/registros
 server.post('/logs/registros', (req, res) => {
     const body = req.body;
 
     if (!body.name) {
         return res.status(400).send('nome precisa ser preenchido');
     }
+
     const mensagem = {
         id: randomUUID(),
-        mensagem: '',
-    }
+        mensagem: 'criado com sucesso',
+    };
 
     fs.readFile('logs.txt', 'utf-8', (err, data) => {
-        if (err) {
+        if (err && err.code !== 'ENOENT') {
             console.error('Erro ao ler arquivo:', err);
             return res.status(500).send('erro servidor');
         }
 
         const logs = data ? JSON.parse(data) : [];
-        mensagem.mensagem = "criado com sucesso"
         logs.push(mensagem);
 
         fs.writeFile('logs.txt', JSON.stringify(logs, null, 2), (err) => {
@@ -39,53 +41,51 @@ server.post('/logs/registros', (req, res) => {
                 return res.status(500).send('erro servidor');
             }
 
-            return res.status(201).json(user);
+            return res.status(201).json(mensagem);
         });
     });
-})
+});
 
-server.post("/logs", (request, response) => {
-  const body = request.body;
+// Rota POST /logs
+server.post("/logs", (req, res) => {
+    const body = req.body;
 
-  if (!body.name) {
-    return response.status(400).send("Nome é obrigatorio");
-  }
-
-  const mensagem = {
-    id: randomUUID(),
-    mensagem: "",
-  };
-
-  fs.readFile("logs.txt", "utf-8", (err, data) => {
-    if (err) {
-      console.error("Erro ao ler arquivo:", err);
-      return response.status(500).json("Internal Server Error");
+    if (!body.name) {
+        return res.status(400).send("Nome é obrigatorio");
     }
 
-    const logs = data ? JSON.parse(data) : [];
-    mensagem.mensagem = "Log criado com sucesso!"
-    logs.push(mensagem);
+    const mensagem = {
+        id: randomUUID(),
+        mensagem: "Log criado com sucesso!",
+    };
 
-    fs.writeFile("logs.txt", JSON.stringify(logs, null, 2), (err) => {
-      if (err) {
-        console.error("Erro ao escrever arquivo:", err);
-        return response.status(500).send("Internal Server Error");
-      }
+    fs.readFile("logs.txt", "utf-8", (err, data) => {
+        if (err && err.code !== 'ENOENT') {
+            console.error("Erro ao ler arquivo:", err);
+            return res.status(500).json("Internal Server Error");
+        }
 
-      return response
-        .status(200)
-        .json({ id: mensagem.id, mensagem: mensagem.mensagem });
+        const logs = data ? JSON.parse(data) : [];
+        logs.push(mensagem);
+
+        fs.writeFile("logs.txt", JSON.stringify(logs, null, 2), (err) => {
+            if (err) {
+                console.error("Erro ao escrever arquivo:", err);
+                return res.status(500).send("Internal Server Error");
+            }
+
+            return res.status(200).json({ id: mensagem.id, mensagem: mensagem.mensagem });
+        });
     });
-  });
 });
-    
 
+// Rota GET /logs/:id
 server.get('/logs/:id', (req, res) => {
     const { id } = req.params;
 
-fs.readFile('logs.txt', 'utf-8', (err, data) => {
+    fs.readFile('logs.txt', 'utf-8', (err, data) => {
         if (err) {
-            console.error('Erro', err);
+            console.error('Erro ao ler arquivo:', err);
             return res.status(500).json('erro servidor');
         }
 
@@ -98,6 +98,7 @@ fs.readFile('logs.txt', 'utf-8', (err, data) => {
 
         return res.status(200).json(log);
     });
-})
+});
 
-server.listen(PORT, () => console.log(`Servidor esta rodando na porta:${PORT}`));
+// Inicialização do servidor
+server.listen(PORT, () => console.log(`Servidor está rodando na porta: ${PORT}`));
