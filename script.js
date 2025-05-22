@@ -1,10 +1,12 @@
+import fs from 'fs';
+import { randomUUID } from 'crypto';
 import express from 'express';
 import bodyParser from 'body-parser';
 
 const server = express();
 const PORT = 8000;
 
-server.use(bodyParser.json());
+server.use(express.json());
 server.get('/', (req, res) => {
     console.log('rota get');
     res.send('pintu');
@@ -99,4 +101,3 @@ fs.readFile('logs.txt', 'utf-8', (err, data) => {
 })
 
 server.listen(PORT, () => console.log(`Servidor esta rodando na porta:${PORT}`));
-
